@@ -1,8 +1,12 @@
+import os, datetime, time
+from crud import crud
+
+
 # get current date only
 def get_current_datetime_as_str():
     import datetime
     return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
+    
 # get current date only
 def get_current_date_as_str():
     import datetime
@@ -66,8 +70,50 @@ def control_usage():
         daily_usage = count_all_sessions(file_path)
     shutdown_computer()
 
+def get_username():
+    return os.path.basename(os.path.expanduser('~')).lower().replace(' ', '_')
+
+def control_usage_db(history_key, max_usage):    
+    rows = DB.SELECT('history', '*', where={'column': 'history_key', 'oper': '=', 'value': 'history_key'})
+    if not rows:
+        daily_usage = 0
+        DB.INSERT_INTO('history', [history_key, daily_usage])
+    else:
+        daily_usage = int(rows[0][1])
+    
+    print(history_key, 'used for', daily_usage, 'secs or ', daily_usage // 60, 'mins today')
+    wait = 10
+    while daily_usage < max_usage:
+        print('waiting for another', wait, 'secs')
+        time.sleep(wait)
+        daily_usage += wait
+        DB.UPDATE('history', {'column': 'used', 'oper': '=', 'value': daily_usage}, {'column': 'history_key', 'oper': '=', 'value': history_key})
+        print(history_key, 'used for', daily_usage, 'secs or ', daily_usage // 60, 'mins today')    
+    shutdown_computer()
+
 if __name__ == '__main__':
-    control_usage()
+    #control_usage()
+    
+    # create database and necessary tables
+    DB = crud('daily_usage.db')
+    DB.CREATE_TABLE('history', 'history_key varchar(255), used int')
+    DB.CREATE_TABLE('setting', 'name varchar(255), value varchar(255)')
+    
+    # set daily time limit
+    rows = DB.SELECT('setting', '*', where={'column': 'name', 'oper': '=', 'value': 'daily_usage_in_sec'})
+    if not rows:
+        max_usage = 3900
+        print('setting default daily usage to be ', max_usage//60, 'mins')
+        DB.INSERT_INTO('setting', ['daily_usage_in_sec', '3900'])
+    else:
+        max_usage = int(rows[0][1])
+    
+    print('max_usage is:', max_usage, 'secs or ', max_usage // 60, 'mins today')
+    username = get_username()
+    history_key = '%s_%s' % (datetime.datetime.today().strftime('%Y_%m_%d'), username)
+    print('history_key:', history_key)
+    control_usage_db(history_key, max_usage)
+
 
 
 
