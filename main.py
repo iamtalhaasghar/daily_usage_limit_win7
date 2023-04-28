@@ -25,7 +25,8 @@ def start_script_in_background(script_path):
 # shutdown computer
 def shutdown_computer():
     import os
-    os.system('shutdown -s -t 0')
+    #os.system('shutdown -s -t 0')
+    os.system('shutdown -l -f')
     return
 
 # create a file in the user home directory
@@ -56,8 +57,8 @@ def control_usage():
     import time
     file_path = create_file_in_user_home_dir(get_current_date_as_str() + '.txt')
     daily_usage = count_all_sessions(file_path)
-    max_usage = 30 # max daily usage in secs
-    wait = 3
+    max_usage = 3900 # max daily usage in secs
+    wait = 10
     while daily_usage < max_usage:
         print('waiting for another', wait, 'secs')
         time.sleep(wait)
